@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Depends
 from .config import SUPABASE_URL
 from .auth import router as auth_router
+from .deps import get_current_user
 #创建应用实例
 app = FastAPI(title="StyleMate API")
 #将auth路由挂到app
@@ -13,4 +14,11 @@ def health():
         "status": "ok",
         "service": "stylemate",
         "supabase_configured": bool(SUPABASE_URL)
+    }
+#jwt验证模块
+@app.get("/me")
+def me(user = Depends(get_current_user)):
+    return {
+        "user_id": str(user.id),
+        "email": user.user_metadata.get("email") if user.user_metadata else None
     }
