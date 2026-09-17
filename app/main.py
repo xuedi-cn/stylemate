@@ -15,7 +15,7 @@ def health():
         "service": "stylemate",
         "supabase_configured": bool(SUPABASE_URL)
     }
-#jwt验证模块
+#获取当前用户信息
 @app.get("/me")
 def me(user = Depends(get_current_user)):
     return {

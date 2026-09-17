@@ -4,7 +4,7 @@ from .config import SUPABASE_URL, SUPABASE_KEY
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
+#jwt验证依赖
 def get_current_user(x_token: str = Header(None)):
     if not x_token or not x_token.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
