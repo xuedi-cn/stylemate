@@ -2,10 +2,12 @@ from fastapi import FastAPI,Depends
 from .config import SUPABASE_URL
 from .auth import router as auth_router
 from .deps import get_current_user
+from .items import router as items_router
 #创建应用实例
 app = FastAPI(title="StyleMate API")
 #将auth路由挂到app
 app.include_router(auth_router)
+app.include_router(items_router)
 
 
 @app.get("/health")
