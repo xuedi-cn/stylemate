@@ -6,7 +6,7 @@ load_dotenv()
 #统一读取环境变量
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 COS_SECRET_ID = os.getenv("COS_SECRET_ID")
 COS_SECRET_KEY = os.getenv("COS_SECRET_KEY")

@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from .deps import get_current_user
 from .storage import upload_file_to_cos
+from supabase import create_client
+from .config import SUPABASE_URL,SUPABASE_SERVICE_KEY
 #上传接口
 router = APIRouter(prefix="/items", tags=["items"])
-
+#创建supabase客户端
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 @router.post("/upload")
 async def upload_item(
@@ -27,9 +30,20 @@ async def upload_item(
             content_type=file.content_type,
         )
     except Exception as e:
+        print(">>> UPLOAD ERROR:",repr(e))
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+    #   写入数据库
+    try:
+        res = supabase.table("items").insert({
+            "user_id": str(user.id),
+            "image_url": image_url,
+        }).execute()
+        item_id = res.data[0]["id"] if res.data else None
+    except Exception as e:
+        print(">>> DB ERROR:",repr(e))
+        raise HTTPException(status_code=500, detail=f"DB failed: {str(e)}")
 
-    #  返回 URL（还没写数据库，这一步先返回）
+
     return {
         "message": "上传成功",
         "image_url": image_url,
