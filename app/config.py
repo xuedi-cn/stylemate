@@ -12,3 +12,5 @@ COS_SECRET_ID = os.getenv("COS_SECRET_ID")
 COS_SECRET_KEY = os.getenv("COS_SECRET_KEY")
 COS_BUCKET = os.getenv("COS_BUCKET")
 COS_REGION = os.getenv("COS_REGION")
+
+DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")

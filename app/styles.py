@@ -3,31 +3,29 @@ from supabase import create_client
 from .config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from .deps import get_current_user
 from .storage import upload_file_to_cos
-from .ai import analyze_clothing
+from .ai import analyze_style
 
-router = APIRouter(prefix="/items", tags=["items"])
+router = APIRouter(prefix="/styles", tags=["styles"])
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
-def analyze_and_update(item_id: int, image_url: str):
-    """后台任务：调 AI 分析图片，把结果写回数据库"""
+def analyze_and_update_style(style_id: int, image_url: str):
+    """后台任务：分析风格图，把结果写回 style_refs"""
     try:
-        result = analyze_clothing(image_url)
-        supabase.table("items").update({
-            "category": result.get("category"),
-            "color": result.get("color"),
-            "material": result.get("material"),
+        result = analyze_style(image_url)
+        supabase.table("style_refs").update({
             "style_tags": result.get("style_tags"),
-            "season": result.get("season"),
-        }).eq("id", item_id).execute()
-        print(f">>> AI analysis done for item {item_id}")
+            "colors": result.get("colors"),
+            "key_items": result.get("key_items"),
+        }).eq("id", style_id).execute()
+        print(f">>> Style analysis done for style {style_id}")
     except Exception as e:
-        print(f">>> AI analysis failed for item {item_id}: {repr(e)}")
+        print(f">>> Style analysis failed for style {style_id}: {repr(e)}")
 
 
 @router.post("/upload")
-async def upload_item(
+async def upload_style(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     user = Depends(get_current_user),
@@ -48,58 +46,54 @@ async def upload_item(
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     try:
-        res = supabase.table("items").insert({
+        res = supabase.table("style_refs").insert({
             "user_id": str(user.id),
             "image_url": image_url,
         }).execute()
-        item_id = res.data[0]["id"] if res.data else None
+        style_id = res.data[0]["id"] if res.data else None
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DB failed: {str(e)}")
 
-    # 添加后台任务
-    background_tasks.add_task(analyze_and_update, item_id, image_url)
+    background_tasks.add_task(analyze_and_update_style, style_id, image_url)
 
     return {
         "message": "上传成功，AI 分析中",
-        "item_id": item_id,
+        "style_id": style_id,
         "image_url": image_url,
     }
 
 
 @router.get("/")
-def list_items(user = Depends(get_current_user)):
+def list_styles(user = Depends(get_current_user)):
     try:
-        res = supabase.table("items") \
-            .select("id, image_url, category, color, material, style_tags, season, created_at") \
+        res = supabase.table("style_refs") \
+            .select("id, image_url, style_tags, colors, key_items, created_at") \
             .eq("user_id", str(user.id)) \
             .order("created_at", desc=True) \
             .execute()
         return {
-            "items": res.data,
+            "styles": res.data,
             "total": len(res.data)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
-@router.delete("/{item_id}")
-def delete_item(item_id: int, user = Depends(get_current_user)):
+@router.delete("/{style_id}")
+def delete_style(style_id: int, user = Depends(get_current_user)):
+    """删除用户的风格参考图"""
     try:
-        # 先查这条记录，确认属于当前用户
-        res = supabase.table("items") \
+        res = supabase.table("style_refs") \
             .select("id, user_id") \
-            .eq("id", item_id) \
+            .eq("id", style_id) \
             .eq("user_id", str(user.id)) \
             .execute()
 
         if not res.data:
-            raise HTTPException(status_code=404, detail="Item not found or not yours")
+            raise HTTPException(status_code=404, detail="风格图不存在或不属于你")
 
-        # 删除
-        supabase.table("items").delete().eq("id", item_id).execute()
-
-        return {"message": "删除成功", "item_id": item_id}
-
+        supabase.table("style_refs").delete().eq("id", style_id).execute()
+        return {"message": "删除成功", "style_id": style_id}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")

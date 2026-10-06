@@ -38,6 +38,7 @@ def login(req: AuthRequest):
         return {
             "message": "登录成功",
             "access_token": res.session.access_token if res.session else None,
+            "refresh_token": res.session.refresh_token if res.session else None,
             "user_id": res.user.id if res.user else None
         }
     except Exception as e:
