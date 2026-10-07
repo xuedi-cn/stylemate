@@ -53,11 +53,9 @@ stylemate/
 └── .env                 # 本地环境变量（不提交）
 ```
 
-## 🚀 本地运行
-
 ### 1. 克隆仓库
 
-```bash
+```
 git clone https://github.com/xuedi-cn/stylemate.git
 cd stylemate
 ```
@@ -78,9 +76,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 3. 安装依赖
+
+```
+pip install -r requirements.txt
+```
+
+
 ### 4. 配置环境变量
 
 在根目录创建 `.env`，填入：
+
 ```
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_KEY=sb_publishable_xxx
@@ -94,9 +100,10 @@ DASHSCOPE_API_KEY=sk-xxx
 
 ### 5. 启动服务
 
-```bash
+```
 python -m uvicorn app.main:app --reload
 ```
+
 
 访问 http://127.0.0.1:8000/docs 查看接口文档。
 
