@@ -33,22 +33,25 @@ AI 穿搭助手的后端服务 —— 基于 FastAPI + Supabase + 通义千问�
 - **收藏系统**：保存喜欢的搭配，作为后续推荐的偏好参考
 
 ## 📁 项目结构
+
+```
 stylemate/
 ├── app/
-│ ├── init.py
-│ ├── main.py # 入口 + 路由挂载 + CORS
-│ ├── config.py # 环境变量读取
-│ ├── deps.py # JWT 验证依赖
-│ ├── auth.py # 注册 / 登录
-│ ├── items.py # 单品上传 / 查询 / 删除
-│ ├── styles.py # 风格参考图上传 / 查询 / 删除
-│ ├── outfits.py # 搭配推荐 / 保存 / 查询
-│ ├── storage.py # 腾讯云 COS 封装
-│ ├── ai.py # AI 能力（视觉分析 + Agent）
-│ └── tools.py # Agent 可调用的工具函数
+│   ├── __init__.py
+│   ├── main.py          # 入口 + 路由挂载 + CORS
+│   ├── config.py        # 环境变量读取
+│   ├── deps.py          # JWT 验证依赖
+│   ├── auth.py          # 注册 / 登录
+│   ├── items.py         # 单品上传 / 查询 / 删除
+│   ├── styles.py        # 风格参考图上传 / 查询 / 删除
+│   ├── outfits.py       # 搭配推荐 / 保存 / 查询
+│   ├── storage.py       # 腾讯云 COS 封装
+│   ├── ai.py            # AI 能力（视觉分析 + Agent）
+│   └── tools.py         # Agent 可调用的工具函数
 ├── requirements.txt
-├── railway.toml # Railway 部署配置
-└── .env # 本地环境变量（不提交）
+├── railway.toml         # Railway 部署配置
+└── .env                 # 本地环境变量（不提交）
+```
 
 ## 🚀 本地运行
 
@@ -58,18 +61,27 @@ stylemate/
 git clone https://github.com/xuedi-cn/stylemate.git
 cd stylemate
 ```
+
 ### 2. 创建虚拟环境
+
 ```bash
 python -m venv venv
 # Windows
-venv\Scripts\activate
+venv\\Scripts\\activate
 # Mac / Linux
 source venv/bin/activate
 ```
+
 ### 3. 安装依赖
-```bash pip install -r requirements.txt```
-### 4. 配置环境变量
+
 ```bash
+pip install -r requirements.txt
+```
+
+### 4. 配置环境变量
+
+在根目录创建 `.env`，填入：
+```
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_KEY=sb_publishable_xxx
 SUPABASE_SERVICE_KEY=sb_secret_xxx
@@ -79,25 +91,30 @@ COS_BUCKET=xxx
 COS_REGION=ap-guangzhou
 DASHSCOPE_API_KEY=sk-xxx
 ```
+
 ### 5. 启动服务
-```bash python -m uvicorn app.main:app --reload```
+
+```bash
+python -m uvicorn app.main:app --reload
+```
 
 访问 http://127.0.0.1:8000/docs 查看接口文档。
 
-🔐 权限设计（三层防御）
-API 层：get_current_user 依赖，验证 JWT，未登录返回 401
+## 🔐 权限设计（三层防御）
 
-业务层：所有查询强制 .eq("user_id", user.id)，防止越权
+1. **API 层**：`get_current_user` 依赖，验证 JWT，未登录返回 401
+2. **业务层**：所有查询强制 `.eq("user_id", user.id)`，防止越权
+3. **数据库层**：Supabase RLS 兜底，后端用 `service_role` key 绕过 RLS 做业务操作
 
-数据库层：Supabase RLS 兜底，后端用 service_role key 绕过 RLS 做业务操作
+## 🧠 AI Agent 架构
 
-🧠 AI Agent 架构
 推荐搭配时，Agent 会：
 
-调用 query_items → 查用户衣柜
+1. 调用 `query_items` → 查用户衣柜
+2. 调用 `query_style_refs` → 查风格偏好
+3. 主动注入**收藏搭配**到 prompt（不走工具，减少不确定性）
+4. LLM 综合推理 → 返回 3 套结构化搭配（`name` / `item_ids` / `reason`）
 
-调用 query_style_refs → 查风格偏好
+## 📄 License
 
-主动注入收藏搭配到 prompt（不走工具，减少不确定性）
-
-LLM 综合推理 → 返回 3 套结构化搭配（name / item_ids / reason）
+MIT
